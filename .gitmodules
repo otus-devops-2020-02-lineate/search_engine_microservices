@@ -1,0 +1,6 @@
+[submodule "src/search_engine_crawler"]
+	path = src/search_engine_crawler
+	url = https://github.com/express42/search_engine_crawler
+[submodule "src/search_engine_ui"]
+	path = src/search_engine_ui
+	url = https://github.com/express42/search_engine_ui
