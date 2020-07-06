@@ -1,0 +1,63 @@
+version: "3.7"
+
+services:
+
+  # ---------------------------------------------------------- crawler
+  crawler:
+    build:
+      context: ../src/search_engine_crawler
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO=mongodb
+      - MONGO_PORT
+      - RMQ_HOST
+      - RMQ_QUEUE
+      - RMQ_USERNAME
+      - RMQ_PASSWORD
+      - CHECK_INTERVAL
+      - EXCLUDE_URLS
+
+  # ---------------------------------------------------------- ui
+  ui:
+    build:
+      context: ../src/search_engine_ui
+    depends_on:
+      - mongodb
+    ports:
+      - 8000:8000
+    environment:
+      - MONGO=mongodb
+      - MONGO_PORT
+
+  # ---------------------------------------------------------- mongodb
+  mongodb:
+    image: mongo:${VERSION_MONGO:-latest}
+    ports:
+      - ${MONGO_PORT:-27017}:27017
+    volumes:
+      - mongodb:/data/db
+
+  # ---------------------------------------------------------- rabbitmq
+#  rabbitmq:
+#    image: bitnami/rabbitmq:${VERSION_RABBITMQ:-latest}
+#    environment:
+#      - RABBITMQ_USERNAME=${RMQ_USERNAME}
+#      - RABBITMQ_PASSWORD=${RMQ_PASSWORD}
+#    volumes:
+#      - rabbitmq:/bitnami
+
+  # ---------------------------------------------------------- rabbitmq
+  rabbitmq:
+    image: rabbitmq:${VERSION_RABBITMQ:-latest}
+#    ports:
+#      - 15672:15672
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RMQ_USERNAME}
+      - RABBITMQ_DEFAULT_PASS=${RMQ_PASSWORD}
+    volumes:
+      - rabbitmq:/data
+
+volumes:
+  mongodb:
+  rabbitmq:
