@@ -9,10 +9,11 @@ services:
       dockerfile: $PWD/Dockerfile-crawler
     depends_on:
       - mongodb
+      - rabbitmq
     environment:
       - MONGO=mongodb
       - MONGO_PORT
-      - RMQ_HOST
+      - RMQ_HOST=rabbitmq
       - RMQ_QUEUE
       - RMQ_USERNAME
       - RMQ_PASSWORD
