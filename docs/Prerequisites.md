@@ -22,3 +22,8 @@
   (Confirm appropriate Github access requests)
 
       /github subscribe otus-devops-2020-02-lineate/search_engine_microservices commits:all
+
+## Submodules
+
+    git submodule add https://github.com/express42/search_engine_crawler ./src/search_engine_crawler/
+    git submodule add https://github.com/express42/search_engine_ui ./src/search_engine_ui/
