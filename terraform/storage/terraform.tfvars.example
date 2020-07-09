@@ -1,0 +1,2 @@
+project                       = "docker-278011"
+terraform_backend_bucket_name = "otus-devops-lineate-search-engine-terraform-backend"
