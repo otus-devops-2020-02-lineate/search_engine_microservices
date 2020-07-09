@@ -63,17 +63,6 @@ resource "google_container_cluster" "kubernetes-cluster" {
     }
   }
 
-  addons_config {
-    network_policy_config {
-      disabled = false
-    }
-  }
-
-  network_policy {
-    enabled  = true
-    provider = "CALICO"
-  }
-
   timeouts {
     create = "30m"
     update = "40m"
