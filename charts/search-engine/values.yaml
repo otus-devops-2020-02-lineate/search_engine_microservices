@@ -1,0 +1,25 @@
+ui:
+  image:
+    repository: otusdevops202002lineate/search-engine-ui
+    tag: "1.0"
+  service:
+    externalPort: 8000
+  ingress:
+    class: gce
+
+crawler:
+  image:
+    repository: otusdevops202002lineate/search-engine-crawler
+    tag: "1.0"
+  queue:
+    user: rabbitmq
+    password: rabbitmq
+
+mongodb:
+  auth:
+    enabled: false
+
+rabbitmq:
+  auth:
+    username: rabbitmq
+    password: rabbitmq

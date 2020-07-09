@@ -1,0 +1,13 @@
+---
+service:
+  internalPort: 8000
+  externalPort: 8000
+
+image:
+  repository: otusdevops202002lineate/search-engine-ui
+  tag: latest
+
+ingress:
+  class: nginx
+
+databaseHost:

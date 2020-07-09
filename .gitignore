@@ -40,3 +40,6 @@ build_info.txt
 
 __pycache__
 .coverage
+
+# Helm dependencies
+charts/*/charts
