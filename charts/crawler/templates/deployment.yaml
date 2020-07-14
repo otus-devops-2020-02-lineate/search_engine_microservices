@@ -1,0 +1,49 @@
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "crawler.fullname" . }}
+  labels:
+    app: search-engine
+    component: crawler
+    release: {{ .Release.Name }}
+spec:
+  replicas: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: search-engine
+      component: crawler
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      name: crawler
+      labels:
+        app: search-engine
+        component: crawler
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - image: {{ (printf "%s:%s" .Values.image.repository .Values.image.tag) | quote }}
+          name: crawler
+          args: ["https://vitkhab.github.io/search_engine_test_site/"]
+          env:
+            - name: MONGO
+              value: {{ .Values.databaseHost | default (printf "%s-mongodb" .Release.Name) }}
+            - name: RMQ_HOST
+              value: {{ .Values.queue.host | default (printf "%s-rabbitmq" .Release.Name) }}
+            - name: RMQ_QUEUE
+              value: {{ .Values.queue.name | default "urls" }}
+            - name: RMQ_USERNAME
+              value: {{ .Values.queue.user | default "guest" }}
+            - name: RMQ_PASSWORD
+              value: {{ .Values.queue.password | default "guest" }}
+            - name: CHECK_INTERVAL
+              value: {{ .Values.queue.interval | default 60 | quote }}
+            - name: EXCLUDE_URLS
+              value: {{ .Values.queue.exclude | default ".*github.com" }}
+            - name: ENV
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace

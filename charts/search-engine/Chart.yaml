@@ -1,0 +1,8 @@
+name: search-engine
+version: 1.0.0
+description: OTUS search engine application
+maintainers:
+  - name: Nikita Shvyryaev
+    email: nshvyryaev@lineate.com
+  - name: Georgy Vashchenko
+    email: gvashchenko@lineate.com

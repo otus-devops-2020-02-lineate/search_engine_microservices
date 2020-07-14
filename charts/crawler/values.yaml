@@ -1,0 +1,14 @@
+---
+image:
+  repository: otusdevops202002lineate/search-engine-crawler
+  tag: latest
+
+databaseHost:
+
+queue:
+  host:
+  name:
+  user:
+  password:
+  interval:
+  exclude:
