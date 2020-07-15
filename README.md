@@ -17,6 +17,10 @@ Otus DevOps Tools & Practices 2020-02 - Project Work
   - [Install Helm](./docs/Helm-installation.md)
   - [Release the app](./docs/Helm-charts-running.mdKubernetes)
 
+- Gitlab CI
+  - [Install Gitlab](./docs/Gitlab-CI-installation.md)
+  - [Configure](./docs/Gitlab-CI-configuration.md)
+
 ## Maintainers
 
  - [Nikita Shvyryaev](https://github.com/nshvyryaev)
