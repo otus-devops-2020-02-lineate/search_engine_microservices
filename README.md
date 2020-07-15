@@ -4,13 +4,13 @@ Otus DevOps Tools & Practices 2020-02 - Project Work
 
 ## Docs
 
-- [Prerequisites](./docs/Prerequisites.md)
+- [Prerequisites](./docs/Prerequisites.md) -
   _Working with the repo_
 
-- [Docker Compose Runbook](./docs/Docker-compose-runbook.md)
+- [Docker Compose Runbook](./docs/Docker-compose-runbook.md) -
   _Local testing_
 
-- [Terraform Runbook](./docs/Terraform-runbook.md)  Repo
+- [Terraform Runbook](./docs/Terraform-runbook.md) -
   _Deploy Kubernetes infrastructure in GCP_
 
 - Manual Kubernetes deployment with Helm
