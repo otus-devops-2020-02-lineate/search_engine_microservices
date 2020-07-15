@@ -1,8 +1,8 @@
 [submodule "src/search_engine_crawler"]
 	path = src/search_engine_crawler
-	url = https://github.com/otus-devops-2020-02-lineate/search_engine_crawler
+	url = git@github.com:otus-devops-2020-02-lineate/search_engine_crawler
 	branch = master
 [submodule "src/search_engine_ui"]
 	path = src/search_engine_ui
-	url = https://github.com/otus-devops-2020-02-lineate/search_engine_ui
+	url = git@github.com:otus-devops-2020-02-lineate/search_engine_ui
 	branch = master

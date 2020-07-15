@@ -5,7 +5,7 @@ ui:
   service:
     externalPort: 8000
   ingress:
-    class: gce
+    class: nginx
 
 crawler:
   image:
