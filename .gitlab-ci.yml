@@ -27,7 +27,6 @@ staging:
   only:
     refs:
       - master
-      - feature/prod-pipeline
     kubernetes: active
   before_script:
     # installing dependencies
@@ -77,7 +76,6 @@ production:
   only:
     refs:
       - master
-      - feature/prod-pipeline
     kubernetes: active
   before_script:
     # installing dependencies
