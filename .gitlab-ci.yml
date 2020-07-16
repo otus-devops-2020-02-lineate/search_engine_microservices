@@ -50,7 +50,7 @@ staging:
     - echo $KUBE_NAMESPACE
     - track="${1-stable}"
     - name="$CI_ENVIRONMENT_SLUG"
-    - helm dep build charts/search-engine
+    - helm dep update charts/search-engine
     - >
       helm upgrade --install \
         --wait \
@@ -100,7 +100,7 @@ production:
     - echo $KUBE_NAMESPACE
     - track="${1-stable}"
     - name="$CI_ENVIRONMENT_SLUG"
-    - helm dep build charts/search-engine
+    - helm dep update charts/search-engine
     - >
       helm upgrade --install \
         --wait \
