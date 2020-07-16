@@ -71,8 +71,8 @@ production:
     CI_APPLICATION_TAG: $CI_COMMIT_REF_SLUG
     CI_CONTAINER_NAME: ci_job_build_${CI_JOB_ID}
   environment:
-    name: production.search-engine
-    url: http://production
+    name: production
+    url: http://production.search-engine
   when: manual
   only:
     refs:
