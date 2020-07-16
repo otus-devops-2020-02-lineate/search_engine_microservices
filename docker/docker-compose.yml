@@ -6,7 +6,6 @@ services:
   crawler:
     build:
       context: ../src/search_engine_crawler
-      dockerfile: $PWD/Dockerfile-crawler
     depends_on:
       - mongodb
       - rabbitmq
@@ -24,7 +23,6 @@ services:
   ui:
     build:
       context: ../src/search_engine_ui
-      dockerfile: $PWD/Dockerfile-ui
     depends_on:
       - mongodb
     ports:
