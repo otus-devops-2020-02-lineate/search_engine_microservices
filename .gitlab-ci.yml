@@ -52,9 +52,8 @@ staging:
       helm upgrade --install \
         --wait \
         --set ui.ingress.host="$host" \
-        --set ui.image.tag="$(curl http://gitlab-gitlab/$CI_PROJECT_NAMESPACE/ui/raw/master/VERSION)" \
-        --set post.image.tag="$(curl http://gitlab-gitlab/$CI_PROJECT_NAMESPACE/post/raw/master/VERSION)" \
-        --set comment.image.tag="$(curl http://gitlab-gitlab/$CI_PROJECT_NAMESPACE/comment/raw/master/VERSION)" \
+        --set ui.image.tag="$(curl http://gitlab-gitlab/$CI_PROJECT_NAMESPACE/search-engine-ui/raw/master/VERSION)" \
+        --set crawler.image.tag="$(curl http://gitlab-gitlab/$CI_PROJECT_NAMESPACE/search-engine-crawler/raw/master/VERSION)" \
         --namespace="$KUBE_NAMESPACE" \
         --version="$CI_PIPELINE_ID-$CI_JOB_ID" \
         "$name" \
@@ -100,9 +99,8 @@ production:
       helm upgrade --install \
         --wait \
         --set ui.ingress.host="$host" \
-        --set ui.image.tag="$(curl http://gitlab-gitlab/$CI_PROJECT_NAMESPACE/ui/raw/master/VERSION)" \
-        --set post.image.tag="$(curl http://gitlab-gitlab/$CI_PROJECT_NAMESPACE/post/raw/master/VERSION)" \
-        --set comment.image.tag="$(curl http://gitlab-gitlab/$CI_PROJECT_NAMESPACE/comment/raw/master/VERSION)" \
+        --set ui.image.tag="$(curl http://gitlab-gitlab/$CI_PROJECT_NAMESPACE/search-engine-ui/raw/master/VERSION)" \
+        --set crawler.image.tag="$(curl http://gitlab-gitlab/$CI_PROJECT_NAMESPACE/search-engine-crawler/raw/master/VERSION)" \
         --namespace="$KUBE_NAMESPACE" \
         --version="$CI_PIPELINE_ID-$CI_JOB_ID" \
         "$name" \
