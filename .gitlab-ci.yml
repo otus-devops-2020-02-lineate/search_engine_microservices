@@ -38,6 +38,8 @@ staging:
     - curl https://get.helm.sh/helm-v3.2.4-linux-amd64.tar.gz | tar zx
     - mv linux-amd64/helm /usr/bin/
     - helm version --client
+    - curl -o /usr/bin/sync-repo.sh https://raw.githubusercontent.com/kubernetes/helm/master/scripts/sync-repo.sh
+    - chmod a+x /usr/bin/sync-repo.sh
     - curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
     - chmod +x /usr/bin/kubectl
     - kubectl version --client
@@ -47,7 +49,7 @@ staging:
     - echo $KUBE_NAMESPACE
     - track="${1-stable}"
     - name="$CI_ENVIRONMENT_SLUG"
-    - helm dep build charts/search-engine
+    - helm dep update charts/search-engine
     - >
       helm upgrade --install \
         --wait \
@@ -68,8 +70,8 @@ production:
     CI_APPLICATION_TAG: $CI_COMMIT_REF_SLUG
     CI_CONTAINER_NAME: ci_job_build_${CI_JOB_ID}
   environment:
-    name: production.search-engine
-    url: http://production
+    name: production
+    url: http://production.search-engine
   when: manual
   only:
     refs:
@@ -85,6 +87,8 @@ production:
     - curl https://get.helm.sh/helm-v3.2.4-linux-amd64.tar.gz | tar zx
     - mv linux-amd64/helm /usr/bin/
     - helm version --client
+    - curl -o /usr/bin/sync-repo.sh https://raw.githubusercontent.com/kubernetes/helm/master/scripts/sync-repo.sh
+    - chmod a+x /usr/bin/sync-repo.sh
     - curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
     - chmod +x /usr/bin/kubectl
     - kubectl version --client
@@ -94,7 +98,7 @@ production:
     - echo $KUBE_NAMESPACE
     - track="${1-stable}"
     - name="$CI_ENVIRONMENT_SLUG"
-    - helm dep build charts/search-engine
+    - helm dep update charts/search-engine
     - >
       helm upgrade --install \
         --wait \
