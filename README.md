@@ -15,7 +15,7 @@ Otus DevOps Tools & Practices 2020-02 - Project Work
 
 - Manual Kubernetes deployment with Helm
   - [Install Helm](./docs/Helm-installation.md)
-  - [Release the app](./docs/Helm-charts-running.mdKubernetes)
+  - [Release the app](./docs/Helm-charts-running.md)
 
 - Gitlab CI
   - [Install Gitlab](./docs/Gitlab-CI-installation.md)
