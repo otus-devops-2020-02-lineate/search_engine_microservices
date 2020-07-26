@@ -21,6 +21,10 @@ Otus DevOps Tools & Practices 2020-02 - Project Work
   - [Install Gitlab](./docs/Gitlab-CI-installation.md)
   - [Configure](./docs/Gitlab-CI-configuration.md)
 
+- Monitoring & Logging
+
+  - [Monitoring](./docs/Monitoring.md)
+
 ## Maintainers
 
  - [Nikita Shvyryaev](https://github.com/nshvyryaev)
