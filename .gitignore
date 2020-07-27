@@ -9,6 +9,7 @@
 variables.json
 
 # Terraform internal files
+backend.tf
 *.tfstate
 *.tfstate.*.backup
 *.tfstate.backup
@@ -43,3 +44,6 @@ __pycache__
 
 # Helm dependencies
 charts/*/charts
+
+# Private data
+gitlab-token.secret
