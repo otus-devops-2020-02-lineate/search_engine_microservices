@@ -12,11 +12,8 @@ Add Helm 3 [Bitnami](https://hub.helm.sh/charts/bitnami) repository
 
 Install Prometheus Operator using Helm3
 
-    helm upgrade --install prometheus bitnami/prometheus-operator --version 0.26.0 \
-        --set "prometheus.ingress.enabled=true" \
-        --set "prometheus.ingress.hosts[0].name=prometheus.search-engine" \
-        --set "alertmanager.ingress.enabled=true" \
-        --set "alertmanager.ingress.hosts[0].name=alertmanager.search-engine"
+    cd ./charts/prometheus-operator
+    helm upgrade --install prometheus bitnami/prometheus-operator --version 0.26.0 -f custom_values.yaml
 
 Wait for Prometheus resources to be ready
 
