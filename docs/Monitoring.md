@@ -1,6 +1,8 @@
 # Monitoring
 
-Add Helm 3 repository
+## Prometheus
+
+Add Helm 3 [Bitnami](https://hub.helm.sh/charts/bitnami) repository
 
     helm repo add bitnami https://charts.bitnami.com/bitnami
 
@@ -26,9 +28,36 @@ Check for overriden chart values
 
 Add following as `/etc/hosts` aliases for cluster nginx IP:
 
-    prometheus.search-engine alertmanager.search-engine
+    <nginx_ip> prometheus.search-engine alertmanager.search-engine
+
+Where `nginx_ip` could be found from output:
+
+    kubectl get svc nginx -n nginx-ingress -o=jsonpath='{.status.loadBalancer.ingress[0].ip}'
 
 Now you can hit them via http
+
+## Grafana
+
+(_Optional_) Pull Grafana chart from the repo
+
+    helm pull --untar bitnami/grafana --version 3.3.1
+
+Install Grafana using Helm3
+
+    helm upgrade --install grafana bitnami/grafana --version 3.3.1 \
+        --set "clusterDomain=grafama.search-engine" \
+        --set "admin.password=admin" \
+        --set "service.type=NodePort" \
+        --set "ingress.enabled=true" \
+        --set "ingress.hosts[0].name=grafana.search-engine"
+
+Add `grafana.search-engine` as an alias for cluster nginx IP
+
+    <nginx_ip> grafana.search-engine
+
+Where `nginx_ip` could be found from output:
+
+    kubectl get svc nginx -n nginx-ingress -o=jsonpath='{.status.loadBalancer.ingress[0].ip}'
 
 ## Search Enginge metrics
 
