@@ -11,6 +11,8 @@ crawler:
   image:
     repository: otusdevops202002lineate/search-engine-crawler
     tag: "1.0"
+  service:
+    externalPort: 8000
   queue:
     user: rabbitmq
     password: rabbitmq
