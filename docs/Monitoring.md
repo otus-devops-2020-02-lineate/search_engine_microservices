@@ -70,4 +70,10 @@ Where `nginx_ip` could be found from output:
 
 ## Search Enginge metrics
 
-_coming soon..._
+Add Crawler and UI ServiceMonitors to scrape Search Engine metrics to Prometheus
+
+    kubectl apply -f ./charts/prometheus-operator/search-engine-service-monitors.yaml
+
+Now metrics are available in Prometheus as they are declared in
+[Crawler](https://github.com/otus-devops-2020-02-lineate/search_engine_crawler#%D0%BC%D0%BE%D0%BD%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%BD%D0%B3)
+and [UI](https://github.com/otus-devops-2020-02-lineate/search_engine_crawler#%D0%BC%D0%BE%D0%BD%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%BD%D0%B3) documentation

@@ -1,0 +1,47 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: search-engine-crawler-metrics
+  # namespace: default
+  labels:
+    app.kubernetes.io/name: search-engine-crawler-metrics
+spec:
+  namespaceSelector:
+    matchNames:
+      # TODO add feature branch releases
+      - test
+      - staging
+      - production
+  selector:
+    matchLabels:
+      app: search-engine
+      component: crawler
+  endpoints:
+    - port: http
+      interval: 15s
+      path: "/"
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: search-engine-ui-metrics
+  # namespace: default
+  labels:
+    app.kubernetes.io/name: search-engine-ui-metrics
+spec:
+  namespaceSelector:
+    matchNames:
+      # TODO add feature branch releases
+      - test
+      - staging
+      - production
+  selector:
+    matchLabels:
+      app: search-engine
+      component: ui
+  endpoints:
+    - port: http
+      interval: 15s
+      path: "/metrics"
