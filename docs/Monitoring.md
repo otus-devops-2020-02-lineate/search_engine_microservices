@@ -42,14 +42,26 @@ Now you can hit them via http
 
     helm pull --untar bitnami/grafana --version 3.3.1
 
+Create a k8s secret that will contain Grafana datasource (Prometheus)
+and ConfigMaps for dashboards (see details [here](https://hub.helm.sh/charts/bitnami/grafana)).
+This will add the most popular dashboards for K8s -
+[Kubernetes cluster monitoring (via Prometheus)](https://grafana.com/grafana/dashboards/315)
+and [Kubernetes Deployment metrics](https://grafana.com/grafana/dashboards/741)
+
+    cd ./charts/grafana
+    {
+        kubectl create secret generic grafana-datasource-secret --from-file=datasources.yaml
+        kubectl create configmap grafana-kubernetes-deployment-metrics --from-file=./dashboards/kubernetes-deployment-metrics.json
+        kubectl create configmap grafana-kubernetes-cluster-monitoring --from-file=./dashboards/kubernetes-cluster-monitoring.json
+    }
+
 Install Grafana using Helm3
 
-    helm upgrade --install grafana bitnami/grafana --version 3.3.1 \
-        --set "clusterDomain=grafama.search-engine" \
-        --set "admin.password=admin" \
-        --set "service.type=NodePort" \
-        --set "ingress.enabled=true" \
-        --set "ingress.hosts[0].name=grafana.search-engine"
+    helm upgrade --install grafana bitnami/grafana --version 3.3.1 -f custom-values.yaml
+
+Wait till all Grafana resources become running and ready
+
+    watch -n 5 kubectl get all
 
 Add `grafana.search-engine` as an alias for cluster nginx IP
 
