@@ -1,5 +1,9 @@
 # Monitoring
 
+## Prerequisites
+
+Nginx is expected to be already installed into Kubernetes cluster
+
 ## Prometheus
 
 Add Helm 3 [Bitnami](https://hub.helm.sh/charts/bitnami) repository
@@ -32,6 +36,16 @@ Where `nginx_ip` could be found from output:
     kubectl get svc nginx -n nginx-ingress -o=jsonpath='{.status.loadBalancer.ingress[0].ip}'
 
 Now you can hit them via http
+
+## Search Engine metrics
+
+Add Crawler and UI ServiceMonitors to scrape Search Engine metrics to Prometheus
+
+    kubectl apply -f ./charts/prometheus-operator/search-engine-service-monitors.yaml
+
+Now metrics are available in Prometheus as they are declared in
+[Crawler](https://github.com/otus-devops-2020-02-lineate/search_engine_crawler#%D0%BC%D0%BE%D0%BD%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%BD%D0%B3)
+and [UI](https://github.com/otus-devops-2020-02-lineate/search_engine_crawler#%D0%BC%D0%BE%D0%BD%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%BD%D0%B3) documentation
 
 ## Grafana
 
@@ -68,13 +82,3 @@ Add `grafana.search-engine` as an alias for cluster nginx IP
 Where `nginx_ip` could be found from output:
 
     kubectl get svc nginx -n nginx-ingress -o=jsonpath='{.status.loadBalancer.ingress[0].ip}'
-
-## Search Enginge metrics
-
-Add Crawler and UI ServiceMonitors to scrape Search Engine metrics to Prometheus
-
-    kubectl apply -f ./charts/prometheus-operator/search-engine-service-monitors.yaml
-
-Now metrics are available in Prometheus as they are declared in
-[Crawler](https://github.com/otus-devops-2020-02-lineate/search_engine_crawler#%D0%BC%D0%BE%D0%BD%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%BD%D0%B3)
-and [UI](https://github.com/otus-devops-2020-02-lineate/search_engine_crawler#%D0%BC%D0%BE%D0%BD%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%BD%D0%B3) documentation
