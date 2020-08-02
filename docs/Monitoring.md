@@ -50,6 +50,7 @@ and [Kubernetes Deployment metrics](https://grafana.com/grafana/dashboards/741)
         kubectl create secret generic grafana-datasource-secret --from-file=datasources.yaml
         kubectl create configmap grafana-kubernetes-deployment-metrics --from-file=./dashboards/kubernetes-deployment-metrics.json
         kubectl create configmap grafana-kubernetes-cluster-monitoring --from-file=./dashboards/kubernetes-cluster-monitoring.json
+        kubectl create configmap grafana-search-engine-metrics --from-file=./dashboards/search-engine-metrics.json
     }
 
 Install Grafana using Helm3
