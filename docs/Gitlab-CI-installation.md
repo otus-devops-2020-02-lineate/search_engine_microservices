@@ -3,12 +3,6 @@
 ## Installation
 
 - Run k8s cluster ([runbook](Terraform-runbook.md))
-- Turn legacy authentication in the cluster:
-  - Login to google cloud console
-  - Edit your cluster
-  - Set `Legacy Authorization` enabled
-  - Save
-  - Wait until the cluster's ready
 - Install helm ([instruction](Helm-installation.md))
 - Install gitlab chart
 
