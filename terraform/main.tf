@@ -34,6 +34,7 @@ resource "google_container_cluster" "kubernetes-cluster" {
   location           = var.zone != "" ? var.zone : var.region
   network            = "default"
   initial_node_count = var.node_count
+  enable_legacy_abac = var.legacy_authorization
 
   master_auth {
     //// Basic authentication is disabled
@@ -44,8 +45,6 @@ resource "google_container_cluster" "kubernetes-cluster" {
       issue_client_certificate = false
     }
   }
-
-  enable_legacy_abac = var.legacy_authorization
 
   logging_service    = var.logging_service
   monitoring_service = var.monitoring_service
@@ -65,11 +64,4 @@ resource "google_container_cluster" "kubernetes-cluster" {
     create = "30m"
     update = "40m"
   }
-}
-//---------------------------------------------------------------------- mongodb persistent storage
-resource "google_compute_disk" "storage" {
-  # gcloud compute disks create --size=20GB --zone=us-central1-a search-mongo-disk
-  name = "search-persistent-disk"
-  zone = var.zone
-  size = var.storage_size
 }

@@ -27,11 +27,6 @@ variable machine_type {
   default     = "n1-standard-1"
 }
 
-variable storage_size {
-  description = "Size of the persistent disk for Mongodb and Rabbit MQ, in GB"
-  default     = 20
-}
-
 variable cluster_name {
   description = "Cluster name"
   default     = "cluster-1"

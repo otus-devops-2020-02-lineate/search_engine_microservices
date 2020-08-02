@@ -9,8 +9,7 @@
       machine_type         = "n1-standard-2"
       region               = "europe-west1"
       zone                 = "europe-west1-b"
-      node_count           = "2"
-      storage_size         = "30"
+      node_count           = "3"
       legacy_authorization = true
       logging_service      = "none"
       monitoring_service   = "none"
