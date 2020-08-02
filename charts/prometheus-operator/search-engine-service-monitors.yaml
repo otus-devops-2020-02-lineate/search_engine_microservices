@@ -7,12 +7,9 @@ metadata:
   labels:
     app.kubernetes.io/name: search-engine-crawler-metrics
 spec:
+  # https://coreos.com/operators/prometheus/docs/latest/api.html#namespaceselector
   namespaceSelector:
-    matchNames:
-      # TODO add feature branch releases
-      - test
-      - staging
-      - production
+    any: true
   selector:
     matchLabels:
       app: search-engine
@@ -32,11 +29,7 @@ metadata:
     app.kubernetes.io/name: search-engine-ui-metrics
 spec:
   namespaceSelector:
-    matchNames:
-      # TODO add feature branch releases
-      - test
-      - staging
-      - production
+    any: true
   selector:
     matchLabels:
       app: search-engine
