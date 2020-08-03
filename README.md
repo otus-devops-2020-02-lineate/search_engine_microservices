@@ -31,7 +31,8 @@ Make sure to check all prereq
 
 Use single one-line command to
  - bring up GCP infrastructure
- - install and configure Gitlab server
+ - install nginx (with Gitlab chart) as a single LoadBalancer with external IP for all project resources
+ - install and configure Gitlab server.
  - release app `master` branch to **staging** and **production** environments
  - deploy components for monitoring
 
