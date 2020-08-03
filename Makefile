@@ -58,7 +58,7 @@ publish_ui:
 ## Launch the project
 ###############################################
 
-infra_launch: git_submodules_clone terraform_configure terraform_apply gitlab_launch
+infra_launch: git_submodules_clone terraform_configure terraform_apply gitlab_launch monitoring_launch project_launch
 
 git_submodules_clone:
 	git submodule init
@@ -126,6 +126,7 @@ gitlab_configure:
 		ELAPSED_TIME=$$(($$ENDTIME - $$STARTTIME)); \
 		GITLAB_STATUS=$$(kubectl get pod -l name=gitlab-gitlab -o jsonpath="{.items[0].status.containerStatuses[0].ready}"); \
 	done; \
+	[ "$$GITLAB_STATUS" != "true" ] && echo "GITLAB_STATUS: $$GITLAB_STATUS" && echo "Gitlab launch failed. Please check gitlab status using kubectl get pods" && exit 1; \
 	echo ""; \
 	echo "--------------------------------"; \
 	echo "==> Open http://gitlab.search-engine in your browser"; \
@@ -146,7 +147,7 @@ gitlab_set_ssh:
 		--data '{"title": "default-key", "key": "'"$$SSH_KEY"'"}' \
 		http://gitlab.search-engine/api/v4/user/keys; \
 
-gitlab_prepare_projects: gitlab_create_group gitlab_set_variables gitlab_create_projects gitlab_upload_repositories
+gitlab_prepare_projects: gitlab_create_group gitlab_set_variables gitlab_create_projects
 
 gitlab_create_group:
 	@TOKEN=$$(cat gitlab-token.secret); \
@@ -191,29 +192,7 @@ gitlab_create_projects:
 		http://gitlab.search-engine/api/v4/projects; \
 	echo ""
 
-gitlab_upload_repositories:
-	@ssh-keygen -f "/home/nshvyryaev/.ssh/known_hosts" -R "gitlab.search-engine"; \
-	GROUP_NAME=$$(cat gitlab-group.secret); \
-	git remote rm gitlab; \
-	git remote add gitlab git@gitlab.search-engine:"$$GROUP_NAME"/search-engine-infra.git; \
-	git push gitlab master; \
-	cd src/search_engine_ui; \
-	git remote rm gitlab; \
-	git remote add gitlab git@gitlab.search-engine:"$$GROUP_NAME"/search-engine-ui.git; \
-	git push gitlab master; \
-	cd ../search_engine_crawler; \
-	git remote rm gitlab; \
-	git remote add gitlab git@gitlab.search-engine:"$$GROUP_NAME"/search-engine-crawler.git; \
-	git push gitlab master; \
-	echo ""; \
-	echo "***** Everything is ready! *****"; \
-	echo "===> Now you can open pipeline and wait until environment will be deployed:"; \
-	echo "    http://gitlab.search-engine/$$GROUP_NAME/search-engine-infra/pipelines"; \
-	echo ""
-
-monitoring_launch: monitoring_install
-
-monitoring_install:
+monitoring_launch:
 	@helm repo add bitnami https://charts.bitnami.com/bitnami; \
 	cd ./charts/prometheus-operator; \
 	helm upgrade --install prometheus bitnami/prometheus-operator --version 0.26.0 -f custom_values.yaml; \
@@ -225,8 +204,14 @@ monitoring_install:
 		ENDTIME=$$(date +%s); \
 		ELAPSED_TIME=$$(($$ENDTIME - $$STARTTIME)); \
 		PROMETHEUS_STATUS=$$(kubectl get pod -l "app.kubernetes.io/name=prometheus-operator" -o jsonpath="{.items[0].status.containerStatuses[0].ready}"); \
-	done
-	cd ./charts/grafana; \
+	done; \
+	kubectl apply -f ./search-engine-service-monitors.yaml; \
+	echo ""; \
+	echo "***** Prometheus is ready! *****"; \
+	echo "===> You can access Prometheus at:"; \
+	echo "    http://prometheus.search-engine/"; \
+	echo ""
+	@cd ./charts/grafana; \
 	kubectl create secret generic grafana-datasource-secret --from-file=datasources.yaml; \
 	kubectl create configmap grafana-kubernetes-deployment-metrics --from-file=./dashboards/kubernetes-deployment-metrics.json; \
 	kubectl create configmap grafana-kubernetes-cluster-monitoring --from-file=./dashboards/kubernetes-cluster-monitoring.json; \
@@ -240,4 +225,65 @@ monitoring_install:
 		ENDTIME=$$(date +%s); \
 		ELAPSED_TIME=$$(($$ENDTIME - $$STARTTIME)); \
 		GRAFANA_STATUS=$$(kubectl get pod -l "app.kubernetes.io/name=grafana" -o jsonpath="{.items[0].status.containerStatuses[0].ready}"); \
-	done
+	done; \
+	echo ""; \
+	echo "***** Grafana is ready! *****"; \
+	echo "===> You can access Grafana at:"; \
+	echo "    http://grafana.search-engine/"; \
+	echo ""
+
+project_launch:
+	@ssh-keygen -f "/home/nshvyryaev/.ssh/known_hosts" -R "gitlab.search-engine"; \
+	GROUP_NAME=$$(cat gitlab-group.secret); \
+	cd src/search_engine_ui; \
+	git remote rm gitlab; \
+	git remote add gitlab git@gitlab.search-engine:"$$GROUP_NAME"/search-engine-ui.git; \
+	git push gitlab master; \
+	cd ../search_engine_crawler; \
+	git remote rm gitlab; \
+	git remote add gitlab git@gitlab.search-engine:"$$GROUP_NAME"/search-engine-crawler.git; \
+	git push gitlab master; \
+	cd ../..; \
+	pwd; \
+	TOKEN=$$(cat gitlab-token.secret); \
+	PROJECT_UI_ID=$$(curl -X GET --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
+        --silent http://gitlab.search-engine/api/v4/projects?search=search-engine-ui | sed 's/.*\[{"id":\([0-9]\).*/\1/'); \
+	PROJECT_CRAWLER_ID=$$(curl -X GET --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
+        --silent http://gitlab.search-engine/api/v4/projects?search=search-engine-crawler | sed 's/.*\[{"id":\([0-9]\).*/\1/'); \
+	echo "Waiting for UI and Crawler builds to finish (with 10 minutes timeout)..."; \
+	echo "===> You can check pipelines while waiting:"; \
+	echo "    http://gitlab.search-engine/$$GROUP_NAME/search-engine-ui/pipelines"; \
+	echo "    http://gitlab.search-engine/$$GROUP_NAME/search-engine-crawler/pipelines"; \
+	BUILD_STATUS="running"; \
+	STARTTIME=$$(date +%s); \
+	while [[ "$$BUILD_STATUS" != "success"  && "$$BUILD_STATUS" != "failed"  && "$$BUILD_STATUS" != "canceled" && "$$BUILD_STATUS" != "manual" && "$$ELAPSED_TIME" -lt 600 ]]; \
+	do \
+		ENDTIME=$$(date +%s); \
+		ELAPSED_TIME=$$(($$ENDTIME - $$STARTTIME)); \
+		BUILD_STATUS=$$(curl -X GET --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
+			 --silent http://gitlab.search-engine/api/v4/projects/"$$PROJECT_UI_ID"/pipelines | sed 's/.*"status":"\([a-z]*\)".*/\1/'); \
+	done; \
+	[ "$$BUILD_STATUS" != "success" ] && echo "UI build failed. Please check pipeline at http://gitlab.search-engine/$$GROUP_NAME/search-engine-ui/pipelines" && exit 1; \
+	BUILD_STATUS="running"; \
+	while [[ "$$BUILD_STATUS" != "success"  && "$$BUILD_STATUS" != "failed"  && "$$BUILD_STATUS" != "canceled" && "$$BUILD_STATUS" != "manual" && "$$ELAPSED_TIME" -lt 600 ]]; \
+	do \
+		ENDTIME=$$(date +%s); \
+		ELAPSED_TIME=$$(($$ENDTIME - $$STARTTIME)); \
+		BUILD_STATUS=$$(curl -X GET --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
+			 --silent http://gitlab.search-engine/api/v4/projects/"$$PROJECT_CRAWLER_ID"/pipelines | sed 's/.*"status":"\([a-z]*\)".*/\1/'); \
+	done; \
+	[ "$$BUILD_STATUS" != "success" ] && echo "Crawler build failed. Please check pipeline at http://gitlab.search-engine/$$GROUP_NAME/search-engine-crawler/pipelines" && exit 1; \
+	git remote rm gitlab; \
+	git remote add gitlab git@gitlab.search-engine:"$$GROUP_NAME"/search-engine-infra.git; \
+	git push gitlab master; \
+	echo ""; \
+	echo "***** Project is almost ready! *****"; \
+	echo "===> Now you can open pipeline and wait until staging environment will be deployed:"; \
+	echo "    http://gitlab.search-engine/$$GROUP_NAME/search-engine-infra/pipelines"; \
+	echo ""; \
+	echo "===> You can access Grafana at:"; \
+	echo "    http://grafana.search-engine/"; \
+	echo ""; \
+	echo "===> You can access Prometheus at:"; \
+	echo "    http://prometheus.search-engine/"; \
+	echo ""
