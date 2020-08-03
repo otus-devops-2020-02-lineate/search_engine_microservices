@@ -1,0 +1,26 @@
+clusterDomain: grafana.search-engine
+
+admin:
+  password: admin
+
+dashboardsProvider:
+   enabled: true
+
+datasources:
+   secretName: grafana-datasource-secret
+
+service:
+   type: NodePort
+
+ingress:
+   enabled: true
+   hosts:
+     - name: grafana.search-engine
+
+dashboardsConfigMaps:
+  - configMapName: grafana-kubernetes-deployment-metrics
+    fileName: kubernetes-deployment-metrics.json
+  - configMapName: grafana-kubernetes-cluster-monitoring
+    fileName: kubernetes-cluster-monitoring.json
+  - configMapName: grafana-search-engine-metrics
+    fileName: search-engine-metrics.json

@@ -1,0 +1,11 @@
+prometheus:
+  ingress:
+    enabled: true
+    hosts:
+      - name: prometheus.search-engine
+
+alertmanager:
+  ingress:
+    enabled: true
+    hosts:
+      - name: alertmanager.search-engine

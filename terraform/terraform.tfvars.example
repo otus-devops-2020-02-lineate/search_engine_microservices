@@ -1,6 +1,18 @@
-project                       = "docker-278011"
-node_disk_size_gb             = "40"
-machine_type                  = "n1-standard-1"
-region                        = "europe-west1"
-zone                          = "europe-west1-b"
-node_count                    = "3"
+project              = "docker-278011"
+node_disk_size_gb    = "40"
+machine_type         = "n1-standard-1"
+region               = "europe-west1"
+zone                 = "europe-west1-b"
+node_count           = "3"
+cluster_name         = "cluster-1"
+legacy_authorization = false
+logging_service      = "none"
+monitoring_service   = "none"
+oauth_scopes = [
+  "https://www.googleapis.com/auth/devstorage.read_only",
+  "https://www.googleapis.com/auth/logging.write",
+  "https://www.googleapis.com/auth/monitoring",
+  "https://www.googleapis.com/auth/servicecontrol",
+  "https://www.googleapis.com/auth/service.management.readonly",
+  "https://www.googleapis.com/auth/trace.append"
+]

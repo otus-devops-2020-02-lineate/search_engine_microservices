@@ -9,6 +9,8 @@ services:
     depends_on:
       - mongodb
       - rabbitmq
+    ports:
+      - "8001:8000"
     environment:
       - MONGO=mongodb
       - MONGO_PORT
@@ -26,7 +28,7 @@ services:
     depends_on:
       - mongodb
     ports:
-      - 8000:8000
+      - 8002:8000
     environment:
       - MONGO=mongodb
       - MONGO_PORT

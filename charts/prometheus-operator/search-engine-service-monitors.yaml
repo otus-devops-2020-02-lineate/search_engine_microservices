@@ -1,0 +1,40 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: search-engine-crawler-metrics
+  # namespace: default
+  labels:
+    app.kubernetes.io/name: search-engine-crawler-metrics
+spec:
+  # https://coreos.com/operators/prometheus/docs/latest/api.html#namespaceselector
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app: search-engine
+      component: crawler
+  endpoints:
+    - port: http
+      interval: 15s
+      path: "/"
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: search-engine-ui-metrics
+  # namespace: default
+  labels:
+    app.kubernetes.io/name: search-engine-ui-metrics
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app: search-engine
+      component: ui
+  endpoints:
+    - port: http
+      interval: 15s
+      path: "/metrics"
