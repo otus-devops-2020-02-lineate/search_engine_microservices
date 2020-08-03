@@ -91,7 +91,7 @@ terraform_apply:
 	@cd terraform; \
 	$$(terraform output | cut -d'=' -f 2)
 
-gitlab_launch: gitlab_install gitlab_configure gitlab_prepare_projects
+gitlab_launch: gitlab_install gitlab_configure gitlab_set_ssh gitlab_prepare_projects
 
 gitlab_install:
 	@cd charts/gitlab-omnibus; \
@@ -108,9 +108,12 @@ gitlab_configure:
 		GITLAB_IP=$$(kubectl get service -n nginx-ingress nginx -o jsonpath="{.status.loadBalancer.ingress[0].ip}"); \
 	done; \
 	echo "--------------------------------"; \
-	echo "==> Please add the following line to /etc/hosts (requires sudo access):"; \
+	echo "==> Please add the following lines to /etc/hosts (requires sudo access):"; \
 	echo ""; \
-	echo "    $$GITLAB_IP gitlab-gitlab staging.search-engine production.search-engine"; \
+	echo ""; \
+	echo "$$GITLAB_IP gitlab.search-engine staging.search-engine production.search-engine"; \
+	echo "$$GITLAB_IP grafana.search-engine prometheus.search-engine alertmanager.search-engine"; \
+	echo ""; \
 	echo ""; \
 	read -n 1 -p "==> Whet done with hosts file press any key to continue"; \
 	echo ""; \
@@ -125,10 +128,10 @@ gitlab_configure:
 	done; \
 	echo ""; \
 	echo "--------------------------------"; \
-	echo "==> Open http://gitlab-gitlab in your browser"; \
+	echo "==> Open http://gitlab.search-engine in your browser"; \
 	echo "==> Set your root password"; \
 	echo "==> Sign in as root using your password"; \
-	echo "==> Go to http://gitlab-gitlab/profile/account"; \
+	echo "==> Go to http://gitlab.search-engine/profile/account"; \
 	read -p "==> Copy Private token and paste here: " gitlab_private_token; \
 	echo $$gitlab_private_token > gitlab-token.secret; \
 
@@ -141,7 +144,7 @@ gitlab_set_ssh:
 	SSH_KEY=$$(cat $$SSH_FILE); \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"title": "default-key", "key": "'"$$SSH_KEY"'"}' \
-		http://gitlab-gitlab/api/v4/user/keys; \
+		http://gitlab.search-engine/api/v4/user/keys; \
 
 gitlab_prepare_projects: gitlab_create_group gitlab_set_variables gitlab_create_projects gitlab_upload_repositories
 
@@ -153,7 +156,7 @@ gitlab_create_group:
 	[ -n "$$INPUT_GROUP_NAME" ] && GROUP_NAME=$$INPUT_GROUP_NAME || GROUP_NAME=$$DEFAULT_GROUP_NAME; \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"name": "'"$$GROUP_NAME"'", "path": "'"$$GROUP_NAME"'", "visibility": "public"}' \
-		http://gitlab-gitlab/api/v4/groups; \
+		http://gitlab.search-engine/api/v4/groups; \
     echo $$GROUP_NAME > gitlab-group.secret
 
 gitlab_set_variables:
@@ -163,44 +166,47 @@ gitlab_set_variables:
 	read -p 'Enter Docker Hub user:' CI_REGISTRY_USER; \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"key": "CI_REGISTRY_USER", "value": "'"$$CI_REGISTRY_USER"'"}' \
-		http://gitlab-gitlab/api/v4/groups/"$$GROUP_NAME"/variables; \
+		http://gitlab.search-engine/api/v4/groups/"$$GROUP_NAME"/variables; \
 	read -p 'Enter Docker Hub user password:' CI_REGISTRY_PASSWORD; \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"key": "CI_REGISTRY_PASSWORD", "value": "'"$$CI_REGISTRY_PASSWORD"'"}' \
-		http://gitlab-gitlab/api/v4/groups/"$$GROUP_NAME"/variables
+		http://gitlab.search-engine/api/v4/groups/"$$GROUP_NAME"/variables
 
 gitlab_create_projects:
 	@TOKEN=$$(cat gitlab-token.secret); \
 	GROUP_NAME=$$(cat gitlab-group.secret); \
 	echo "Creating projects in GitLab..."; \
 	NAMESPACE_ID=$$(curl -X GET --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
-        --silent http://gitlab-gitlab/api/v4/namespaces?search="$$GROUP_NAME" | sed 's/.*"id":\([0-9]\).*/\1/'); \
+        --silent http://gitlab.search-engine/api/v4/namespaces?search="$$GROUP_NAME" | sed 's/.*"id":\([0-9]\).*/\1/'); \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"name": "search-engine-infra", "namespace_id": "'"$$NAMESPACE_ID"'", "visibility": "public"}' \
-		http://gitlab-gitlab/api/v4/projects; \
+		http://gitlab.search-engine/api/v4/projects; \
 	echo ""; \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"name": "search-engine-crawler", "namespace_id": "'"$$NAMESPACE_ID"'", "visibility": "public"}' \
-		http://gitlab-gitlab/api/v4/projects; \
+		http://gitlab.search-engine/api/v4/projects; \
 	echo ""; \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"name": "search-engine-ui", "namespace_id": "'"$$NAMESPACE_ID"'", "visibility": "public"}' \
-		http://gitlab-gitlab/api/v4/projects; \
+		http://gitlab.search-engine/api/v4/projects; \
 	echo ""
 
 gitlab_upload_repositories:
-	@ssh-keygen -f "/home/nshvyryaev/.ssh/known_hosts" -R "gitlab-gitlab"; \
+	@ssh-keygen -f "/home/nshvyryaev/.ssh/known_hosts" -R "gitlab.search-engine"; \
 	GROUP_NAME=$$(cat gitlab-group.secret); \
-	git remote add gitlab git@gitlab-gitlab:"$$GROUP_NAME"/search-engine-infra.git; \
+	git remote rm gitlab; \
+	git remote add gitlab git@gitlab.search-engine:"$$GROUP_NAME"/search-engine-infra.git; \
 	git push gitlab master; \
 	cd src/search_engine_ui; \
-	git remote add gitlab git@gitlab-gitlab:"$$GROUP_NAME"/search-engine-ui.git; \
+	git remote rm gitlab; \
+	git remote add gitlab git@gitlab.search-engine:"$$GROUP_NAME"/search-engine-ui.git; \
 	git push gitlab master; \
 	cd ../search_engine_crawler; \
-	git remote add gitlab git@gitlab-gitlab:"$$GROUP_NAME"/search-engine-crawler.git; \
+	git remote rm gitlab; \
+	git remote add gitlab git@gitlab.search-engine:"$$GROUP_NAME"/search-engine-crawler.git; \
 	git push gitlab master; \
 	echo ""; \
 	echo "***** Everything is ready! *****"; \
 	echo "===> Now you can open pipeline and wait until environment will be deployed:"; \
-	echo "    http://gitlab-gitlab/$$GROUP_NAME/search-engine-infra/pipelines"; \
+	echo "    http://gitlab.search-engine/$$GROUP_NAME/search-engine-infra/pipelines"; \
 	echo ""
