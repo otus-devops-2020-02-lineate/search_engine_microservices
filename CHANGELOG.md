@@ -6,3 +6,4 @@
 - [Nikita] - Add Gitlab CI to UI and Crawler services
 - [Georgy] - Monitoring: add custom helm values for installing Prometheus & Grafana,
              datasource and dashboards for Grafana provisioning
+- [Nikita] - Create Makefile for single command interactive project launch

@@ -72,13 +72,13 @@ terraform_copy_variables:
 terraform_configure: terraform_copy_variables
 	@default_project=$$(sed 's/ / /g' terraform/terraform.tfvars | grep project | cut -d'"' -f 2); \
 	read -p 'Enter GCP project ID['"$$default_project"']:' project; \
-	[ -n "$$project" ] && sed 's/\(project.*= \).*/\1"'"$$project"'"/g' terraform/terraform.tfvars; \
-	[ -n "$$project" ] && sed 's/\(project.*= \).*/\1"'"$$project"'"/g' terraform/storage/terraform.tfvars \
+	[ -n "$$project" ] && sed -i 's/\(project.*= \).*/\1"'"$$project"'"/g' terraform/terraform.tfvars; \
+	[ -n "$$project" ] && sed -i 's/\(project.*= \).*/\1"'"$$project"'"/g' terraform/storage/terraform.tfvars \
 	|| echo "Using default project ID"
 	@default_bucket=$$(sed 's/ / /g' terraform/storage/terraform.tfvars | grep terraform_backend_bucket_name | cut -d'"' -f 2); \
 	read -p 'Enter unigue GCP bucket name['"$$default_bucket"']:' bucket; \
-	[ -n "$$bucket" ] && sed 's/\( *bucket.*= \).*/\1"'"$$bucket"'"/g' terraform/backend.tf; \
-	[ -n "$$bucket" ] && sed 's/\( *terraform_backend_bucket_name.*= \).*/\1"'"$$bucket"'"/g' terraform/storage/terraform.tfvars  \
+	[ -n "$$bucket" ] && sed -i 's/\( *bucket.*= \).*/\1"'"$$bucket"'"/g' terraform/backend.tf; \
+	[ -n "$$bucket" ] && sed -i 's/\( *terraform_backend_bucket_name.*= \).*/\1"'"$$bucket"'"/g' terraform/storage/terraform.tfvars  \
 	|| echo "Using default bucket name"
 
 terraform_apply:
@@ -152,7 +152,7 @@ gitlab_create_group:
 	@TOKEN=$$(cat gitlab-token.secret); \
 	DEFAULT_GROUP_NAME='otusdevops202002lineate'; \
 	echo "Creating group in GitLab..."; \
-	read -p 'Enter Gitlab group name['"$$DEFAULT_GROUP_NAME"']:' INPUT_GROUP_NAME; \
+	read -p 'Enter Gitlab group name (should be the same as Docker Hub organization/user where images will be stored)['"$$DEFAULT_GROUP_NAME"']:' INPUT_GROUP_NAME; \
 	[ -n "$$INPUT_GROUP_NAME" ] && GROUP_NAME=$$INPUT_GROUP_NAME || GROUP_NAME=$$DEFAULT_GROUP_NAME; \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"name": "'"$$GROUP_NAME"'", "path": "'"$$GROUP_NAME"'", "visibility": "public"}' \
@@ -210,3 +210,34 @@ gitlab_upload_repositories:
 	echo "===> Now you can open pipeline and wait until environment will be deployed:"; \
 	echo "    http://gitlab.search-engine/$$GROUP_NAME/search-engine-infra/pipelines"; \
 	echo ""
+
+monitoring_launch: monitoring_install
+
+monitoring_install:
+	@helm repo add bitnami https://charts.bitnami.com/bitnami; \
+	cd ./charts/prometheus-operator; \
+	helm upgrade --install prometheus bitnami/prometheus-operator --version 0.26.0 -f custom_values.yaml; \
+	echo "Waiting until prometheus is ready (with 10 minutes timeout)..."; \
+	PROMETHEUS_STATUS="false"; \
+	STARTTIME=$$(date +%s); \
+	while [[ "$$PROMETHEUS_STATUS" != "true"  && "$$ELAPSED_TIME" -lt 600 ]]; \
+	do \
+		ENDTIME=$$(date +%s); \
+		ELAPSED_TIME=$$(($$ENDTIME - $$STARTTIME)); \
+		PROMETHEUS_STATUS=$$(kubectl get pod -l "app.kubernetes.io/name=prometheus-operator" -o jsonpath="{.items[0].status.containerStatuses[0].ready}"); \
+	done
+	cd ./charts/grafana; \
+	kubectl create secret generic grafana-datasource-secret --from-file=datasources.yaml; \
+	kubectl create configmap grafana-kubernetes-deployment-metrics --from-file=./dashboards/kubernetes-deployment-metrics.json; \
+	kubectl create configmap grafana-kubernetes-cluster-monitoring --from-file=./dashboards/kubernetes-cluster-monitoring.json; \
+	kubectl create configmap grafana-search-engine-metrics --from-file=./dashboards/search-engine-metrics.json; \
+	helm upgrade --install grafana bitnami/grafana --version 3.3.1 -f custom-values.yaml; \
+	echo "Waiting until Grafana is ready (with 10 minutes timeout)..."; \
+	GRAFANA_STATUS="false"; \
+	STARTTIME=$$(date +%s); \
+	while [[ "$$GRAFANA_STATUS" != "true"  && "$$ELAPSED_TIME" -lt 600 ]]; \
+	do \
+		ENDTIME=$$(date +%s); \
+		ELAPSED_TIME=$$(($$ENDTIME - $$STARTTIME)); \
+		GRAFANA_STATUS=$$(kubectl get pod -l "app.kubernetes.io/name=grafana" -o jsonpath="{.items[0].status.containerStatuses[0].ready}"); \
+	done
