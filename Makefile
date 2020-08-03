@@ -58,7 +58,7 @@ publish_ui:
 ## Launch the project
 ###############################################
 
-infra_launch: git_submodules_clone terraform_configure terraform_apply gitlab_launch
+infra_launch: git_submodules_clone terraform_configure terraform_apply gitlab_launch monitoring_launch project_launch
 
 git_submodules_clone:
 	git submodule init
@@ -72,13 +72,13 @@ terraform_copy_variables:
 terraform_configure: terraform_copy_variables
 	@default_project=$$(sed 's/ / /g' terraform/terraform.tfvars | grep project | cut -d'"' -f 2); \
 	read -p 'Enter GCP project ID['"$$default_project"']:' project; \
-	[ -n "$$project" ] && sed 's/\(project.*= \).*/\1"'"$$project"'"/g' terraform/terraform.tfvars; \
-	[ -n "$$project" ] && sed 's/\(project.*= \).*/\1"'"$$project"'"/g' terraform/storage/terraform.tfvars \
+	[ -n "$$project" ] && sed -i 's/\(project.*= \).*/\1"'"$$project"'"/g' terraform/terraform.tfvars; \
+	[ -n "$$project" ] && sed -i 's/\(project.*= \).*/\1"'"$$project"'"/g' terraform/storage/terraform.tfvars \
 	|| echo "Using default project ID"
 	@default_bucket=$$(sed 's/ / /g' terraform/storage/terraform.tfvars | grep terraform_backend_bucket_name | cut -d'"' -f 2); \
 	read -p 'Enter unigue GCP bucket name['"$$default_bucket"']:' bucket; \
-	[ -n "$$bucket" ] && sed 's/\( *bucket.*= \).*/\1"'"$$bucket"'"/g' terraform/backend.tf; \
-	[ -n "$$bucket" ] && sed 's/\( *terraform_backend_bucket_name.*= \).*/\1"'"$$bucket"'"/g' terraform/storage/terraform.tfvars  \
+	[ -n "$$bucket" ] && sed -i 's/\( *bucket.*= \).*/\1"'"$$bucket"'"/g' terraform/backend.tf; \
+	[ -n "$$bucket" ] && sed -i 's/\( *terraform_backend_bucket_name.*= \).*/\1"'"$$bucket"'"/g' terraform/storage/terraform.tfvars  \
 	|| echo "Using default bucket name"
 
 terraform_apply:
@@ -91,7 +91,7 @@ terraform_apply:
 	@cd terraform; \
 	$$(terraform output | cut -d'=' -f 2)
 
-gitlab_launch: gitlab_install gitlab_configure gitlab_prepare_projects
+gitlab_launch: gitlab_install gitlab_configure gitlab_set_ssh gitlab_prepare_projects
 
 gitlab_install:
 	@cd charts/gitlab-omnibus; \
@@ -108,9 +108,12 @@ gitlab_configure:
 		GITLAB_IP=$$(kubectl get service -n nginx-ingress nginx -o jsonpath="{.status.loadBalancer.ingress[0].ip}"); \
 	done; \
 	echo "--------------------------------"; \
-	echo "==> Please add the following line to /etc/hosts (requires sudo access):"; \
+	echo "==> Please add the following lines to /etc/hosts (requires sudo access):"; \
 	echo ""; \
-	echo "    $$GITLAB_IP gitlab-gitlab staging.search-engine production.search-engine"; \
+	echo ""; \
+	echo "$$GITLAB_IP gitlab.search-engine staging.search-engine production.search-engine"; \
+	echo "$$GITLAB_IP grafana.search-engine prometheus.search-engine alertmanager.search-engine"; \
+	echo ""; \
 	echo ""; \
 	read -n 1 -p "==> Whet done with hosts file press any key to continue"; \
 	echo ""; \
@@ -123,12 +126,13 @@ gitlab_configure:
 		ELAPSED_TIME=$$(($$ENDTIME - $$STARTTIME)); \
 		GITLAB_STATUS=$$(kubectl get pod -l name=gitlab-gitlab -o jsonpath="{.items[0].status.containerStatuses[0].ready}"); \
 	done; \
+	[ "$$GITLAB_STATUS" != "true" ] && echo "GITLAB_STATUS: $$GITLAB_STATUS" && echo "Gitlab launch failed. Please check gitlab status using kubectl get pods" && exit 1; \
 	echo ""; \
 	echo "--------------------------------"; \
-	echo "==> Open http://gitlab-gitlab in your browser"; \
+	echo "==> Open http://gitlab.search-engine in your browser"; \
 	echo "==> Set your root password"; \
 	echo "==> Sign in as root using your password"; \
-	echo "==> Go to http://gitlab-gitlab/profile/account"; \
+	echo "==> Go to http://gitlab.search-engine/profile/account"; \
 	read -p "==> Copy Private token and paste here: " gitlab_private_token; \
 	echo $$gitlab_private_token > gitlab-token.secret; \
 
@@ -141,19 +145,19 @@ gitlab_set_ssh:
 	SSH_KEY=$$(cat $$SSH_FILE); \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"title": "default-key", "key": "'"$$SSH_KEY"'"}' \
-		http://gitlab-gitlab/api/v4/user/keys; \
+		http://gitlab.search-engine/api/v4/user/keys; \
 
-gitlab_prepare_projects: gitlab_create_group gitlab_set_variables gitlab_create_projects gitlab_upload_repositories
+gitlab_prepare_projects: gitlab_create_group gitlab_set_variables gitlab_create_projects
 
 gitlab_create_group:
 	@TOKEN=$$(cat gitlab-token.secret); \
 	DEFAULT_GROUP_NAME='otusdevops202002lineate'; \
 	echo "Creating group in GitLab..."; \
-	read -p 'Enter Gitlab group name['"$$DEFAULT_GROUP_NAME"']:' INPUT_GROUP_NAME; \
+	read -p 'Enter Gitlab group name (should be the same as Docker Hub organization/user where images will be stored)['"$$DEFAULT_GROUP_NAME"']:' INPUT_GROUP_NAME; \
 	[ -n "$$INPUT_GROUP_NAME" ] && GROUP_NAME=$$INPUT_GROUP_NAME || GROUP_NAME=$$DEFAULT_GROUP_NAME; \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"name": "'"$$GROUP_NAME"'", "path": "'"$$GROUP_NAME"'", "visibility": "public"}' \
-		http://gitlab-gitlab/api/v4/groups; \
+		http://gitlab.search-engine/api/v4/groups; \
     echo $$GROUP_NAME > gitlab-group.secret
 
 gitlab_set_variables:
@@ -163,44 +167,123 @@ gitlab_set_variables:
 	read -p 'Enter Docker Hub user:' CI_REGISTRY_USER; \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"key": "CI_REGISTRY_USER", "value": "'"$$CI_REGISTRY_USER"'"}' \
-		http://gitlab-gitlab/api/v4/groups/"$$GROUP_NAME"/variables; \
+		http://gitlab.search-engine/api/v4/groups/"$$GROUP_NAME"/variables; \
 	read -p 'Enter Docker Hub user password:' CI_REGISTRY_PASSWORD; \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"key": "CI_REGISTRY_PASSWORD", "value": "'"$$CI_REGISTRY_PASSWORD"'"}' \
-		http://gitlab-gitlab/api/v4/groups/"$$GROUP_NAME"/variables
+		http://gitlab.search-engine/api/v4/groups/"$$GROUP_NAME"/variables
 
 gitlab_create_projects:
 	@TOKEN=$$(cat gitlab-token.secret); \
 	GROUP_NAME=$$(cat gitlab-group.secret); \
 	echo "Creating projects in GitLab..."; \
 	NAMESPACE_ID=$$(curl -X GET --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
-        --silent http://gitlab-gitlab/api/v4/namespaces?search="$$GROUP_NAME" | sed 's/.*"id":\([0-9]\).*/\1/'); \
+        --silent http://gitlab.search-engine/api/v4/namespaces?search="$$GROUP_NAME" | sed 's/.*"id":\([0-9]\).*/\1/'); \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"name": "search-engine-infra", "namespace_id": "'"$$NAMESPACE_ID"'", "visibility": "public"}' \
-		http://gitlab-gitlab/api/v4/projects; \
+		http://gitlab.search-engine/api/v4/projects; \
 	echo ""; \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"name": "search-engine-crawler", "namespace_id": "'"$$NAMESPACE_ID"'", "visibility": "public"}' \
-		http://gitlab-gitlab/api/v4/projects; \
+		http://gitlab.search-engine/api/v4/projects; \
 	echo ""; \
 	curl -X POST --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
 		--data '{"name": "search-engine-ui", "namespace_id": "'"$$NAMESPACE_ID"'", "visibility": "public"}' \
-		http://gitlab-gitlab/api/v4/projects; \
+		http://gitlab.search-engine/api/v4/projects; \
 	echo ""
 
-gitlab_upload_repositories:
-	@ssh-keygen -f "/home/nshvyryaev/.ssh/known_hosts" -R "gitlab-gitlab"; \
+monitoring_launch:
+	@helm repo add bitnami https://charts.bitnami.com/bitnami; \
+	cd ./charts/prometheus-operator; \
+	helm upgrade --install prometheus bitnami/prometheus-operator --version 0.26.0 -f custom_values.yaml; \
+	echo "Waiting until prometheus is ready (with 10 minutes timeout)..."; \
+	PROMETHEUS_STATUS="false"; \
+	STARTTIME=$$(date +%s); \
+	while [[ "$$PROMETHEUS_STATUS" != "true"  && "$$ELAPSED_TIME" -lt 600 ]]; \
+	do \
+		ENDTIME=$$(date +%s); \
+		ELAPSED_TIME=$$(($$ENDTIME - $$STARTTIME)); \
+		PROMETHEUS_STATUS=$$(kubectl get pod -l "app.kubernetes.io/name=prometheus-operator" -o jsonpath="{.items[0].status.containerStatuses[0].ready}"); \
+	done; \
+	kubectl apply -f ./search-engine-service-monitors.yaml; \
+	echo ""; \
+	echo "***** Prometheus is ready! *****"; \
+	echo "===> You can access Prometheus at:"; \
+	echo "    http://prometheus.search-engine/"; \
+	echo ""
+	@cd ./charts/grafana; \
+	kubectl create secret generic grafana-datasource-secret --from-file=datasources.yaml; \
+	kubectl create configmap grafana-kubernetes-deployment-metrics --from-file=./dashboards/kubernetes-deployment-metrics.json; \
+	kubectl create configmap grafana-kubernetes-cluster-monitoring --from-file=./dashboards/kubernetes-cluster-monitoring.json; \
+	kubectl create configmap grafana-search-engine-metrics --from-file=./dashboards/search-engine-metrics.json; \
+	helm upgrade --install grafana bitnami/grafana --version 3.3.1 -f custom-values.yaml; \
+	echo "Waiting until Grafana is ready (with 10 minutes timeout)..."; \
+	GRAFANA_STATUS="false"; \
+	STARTTIME=$$(date +%s); \
+	while [[ "$$GRAFANA_STATUS" != "true"  && "$$ELAPSED_TIME" -lt 600 ]]; \
+	do \
+		ENDTIME=$$(date +%s); \
+		ELAPSED_TIME=$$(($$ENDTIME - $$STARTTIME)); \
+		GRAFANA_STATUS=$$(kubectl get pod -l "app.kubernetes.io/name=grafana" -o jsonpath="{.items[0].status.containerStatuses[0].ready}"); \
+	done; \
+	echo ""; \
+	echo "***** Grafana is ready! *****"; \
+	echo "===> You can access Grafana at:"; \
+	echo "    http://grafana.search-engine/"; \
+	echo ""
+
+project_launch:
+	@ssh-keygen -f "/home/nshvyryaev/.ssh/known_hosts" -R "gitlab.search-engine"; \
 	GROUP_NAME=$$(cat gitlab-group.secret); \
-	git remote add gitlab git@gitlab-gitlab:"$$GROUP_NAME"/search-engine-infra.git; \
-	git push gitlab master; \
 	cd src/search_engine_ui; \
-	git remote add gitlab git@gitlab-gitlab:"$$GROUP_NAME"/search-engine-ui.git; \
+	git remote rm gitlab; \
+	git remote add gitlab git@gitlab.search-engine:"$$GROUP_NAME"/search-engine-ui.git; \
 	git push gitlab master; \
 	cd ../search_engine_crawler; \
-	git remote add gitlab git@gitlab-gitlab:"$$GROUP_NAME"/search-engine-crawler.git; \
+	git remote rm gitlab; \
+	git remote add gitlab git@gitlab.search-engine:"$$GROUP_NAME"/search-engine-crawler.git; \
+	git push gitlab master; \
+	cd ../..; \
+	pwd; \
+	TOKEN=$$(cat gitlab-token.secret); \
+	PROJECT_UI_ID=$$(curl -X GET --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
+        --silent http://gitlab.search-engine/api/v4/projects?search=search-engine-ui | sed 's/.*\[{"id":\([0-9]\).*/\1/'); \
+	PROJECT_CRAWLER_ID=$$(curl -X GET --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
+        --silent http://gitlab.search-engine/api/v4/projects?search=search-engine-crawler | sed 's/.*\[{"id":\([0-9]\).*/\1/'); \
+	echo "Waiting for UI and Crawler builds to finish (with 10 minutes timeout)..."; \
+	echo "===> You can check pipelines while waiting:"; \
+	echo "    http://gitlab.search-engine/$$GROUP_NAME/search-engine-ui/pipelines"; \
+	echo "    http://gitlab.search-engine/$$GROUP_NAME/search-engine-crawler/pipelines"; \
+	BUILD_STATUS="running"; \
+	STARTTIME=$$(date +%s); \
+	while [[ "$$BUILD_STATUS" != "success"  && "$$BUILD_STATUS" != "failed"  && "$$BUILD_STATUS" != "canceled" && "$$BUILD_STATUS" != "manual" && "$$ELAPSED_TIME" -lt 600 ]]; \
+	do \
+		ENDTIME=$$(date +%s); \
+		ELAPSED_TIME=$$(($$ENDTIME - $$STARTTIME)); \
+		BUILD_STATUS=$$(curl -X GET --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
+			 --silent http://gitlab.search-engine/api/v4/projects/"$$PROJECT_UI_ID"/pipelines | sed 's/.*"status":"\([a-z]*\)".*/\1/'); \
+	done; \
+	[ "$$BUILD_STATUS" != "success" ] && echo "UI build failed. Please check pipeline at http://gitlab.search-engine/$$GROUP_NAME/search-engine-ui/pipelines" && exit 1; \
+	BUILD_STATUS="running"; \
+	while [[ "$$BUILD_STATUS" != "success"  && "$$BUILD_STATUS" != "failed"  && "$$BUILD_STATUS" != "canceled" && "$$BUILD_STATUS" != "manual" && "$$ELAPSED_TIME" -lt 600 ]]; \
+	do \
+		ENDTIME=$$(date +%s); \
+		ELAPSED_TIME=$$(($$ENDTIME - $$STARTTIME)); \
+		BUILD_STATUS=$$(curl -X GET --header "PRIVATE-TOKEN: $$TOKEN" --header "Content-Type: application/json" \
+			 --silent http://gitlab.search-engine/api/v4/projects/"$$PROJECT_CRAWLER_ID"/pipelines | sed 's/.*"status":"\([a-z]*\)".*/\1/'); \
+	done; \
+	[ "$$BUILD_STATUS" != "success" ] && echo "Crawler build failed. Please check pipeline at http://gitlab.search-engine/$$GROUP_NAME/search-engine-crawler/pipelines" && exit 1; \
+	git remote rm gitlab; \
+	git remote add gitlab git@gitlab.search-engine:"$$GROUP_NAME"/search-engine-infra.git; \
 	git push gitlab master; \
 	echo ""; \
-	echo "***** Everything is ready! *****"; \
-	echo "===> Now you can open pipeline and wait until environment will be deployed:"; \
-	echo "    http://gitlab-gitlab/$$GROUP_NAME/search-engine-infra/pipelines"; \
+	echo "***** Project is almost ready! *****"; \
+	echo "===> Now you can open pipeline and wait until staging environment will be deployed:"; \
+	echo "    http://gitlab.search-engine/$$GROUP_NAME/search-engine-infra/pipelines"; \
+	echo ""; \
+	echo "===> You can access Grafana at:"; \
+	echo "    http://grafana.search-engine/"; \
+	echo ""; \
+	echo "===> You can access Prometheus at:"; \
+	echo "    http://prometheus.search-engine/"; \
 	echo ""

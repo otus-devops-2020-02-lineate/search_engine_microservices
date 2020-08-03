@@ -5,7 +5,7 @@ Otus DevOps Tools & Practices 2020-02 - Project Work
 ## Docs
 
 - [Prerequisites](./docs/Prerequisites.md) -
-  _Working with the repo_
+  _Configure GCP. Work with the repo_
 
 - [Docker Compose Runbook](./docs/Docker-compose-runbook.md) -
   _Local testing_
@@ -23,7 +23,30 @@ Otus DevOps Tools & Practices 2020-02 - Project Work
 
 - Monitoring & Logging
 
-  - [Monitoring](./docs/Monitoring.md)
+  - [Install Prometheus & Grafana](./docs/Monitoring.md)
+
+## How to ramp up infrastructure and release
+
+Make sure to check all prereq
+
+Use single one-line command to
+ - bring up GCP infrastructure
+ - install nginx (with Gitlab chart) as a single LoadBalancer with external IP for all project resources
+ - install and configure Gitlab server.
+ - release app `master` branch to **staging** and **production** environments
+ - deploy components for monitoring
+
+
+       make infra_launch
+
+You will be prompted to define
+ - GCP project ID
+ - Terraform backend s3 bucket name
+ - Gitlab params:
+    - Private token
+    - SSH pubkey for code pushing
+    - Group name for search-engine repos
+    - Docker Hub username, password
 
 ## Maintainers
 

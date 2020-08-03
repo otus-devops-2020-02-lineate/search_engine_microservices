@@ -82,3 +82,6 @@ Add `grafana.search-engine` as an alias for cluster nginx IP
 Where `nginx_ip` could be found from output:
 
     kubectl get svc nginx -n nginx-ingress -o=jsonpath='{.status.loadBalancer.ingress[0].ip}'
+
+First time opening Grafana you should change password.
+Three dashboards Grafana is being provisioned at deploy can be found in Discovery pane.

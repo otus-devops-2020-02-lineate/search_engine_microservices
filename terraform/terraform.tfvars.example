@@ -1,11 +1,11 @@
 project              = "docker-278011"
 node_disk_size_gb    = "40"
-machine_type         = "n1-standard-1"
+machine_type         = "n1-standard-2"
 region               = "europe-west1"
 zone                 = "europe-west1-b"
 node_count           = "3"
 cluster_name         = "cluster-1"
-legacy_authorization = false
+legacy_authorization = true
 logging_service      = "none"
 monitoring_service   = "none"
 oauth_scopes = [
