@@ -1,5 +1,14 @@
 # Prerequisites
 
+## GCP
+
+- Create new project in CGP [console](https://console.cloud.google.com/compute)
+
+- Install [GCloud SDK](https://cloud.google.com/sdk/)
+
+- Run `gcloud init`, select the account and grant the access,
+  pick the cloud project to use
+
 ## Pre-commit hooks
 
 - Install pip

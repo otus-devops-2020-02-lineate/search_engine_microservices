@@ -5,7 +5,7 @@ Otus DevOps Tools & Practices 2020-02 - Project Work
 ## Docs
 
 - [Prerequisites](./docs/Prerequisites.md) -
-  _Working with the repo_
+  _Configure GCP. Work with the repo_
 
 - [Docker Compose Runbook](./docs/Docker-compose-runbook.md) -
   _Local testing_
