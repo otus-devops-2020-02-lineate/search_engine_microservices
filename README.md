@@ -4,6 +4,8 @@ Otus DevOps Tools & Practices 2020-02 - Project Work
 
 ## Docs
 
+- [About & Architecture](./docs/About.md)
+
 - [Prerequisites](./docs/Prerequisites.md) -
   _Configure GCP. Work with the repo_
 
@@ -25,11 +27,11 @@ Otus DevOps Tools & Practices 2020-02 - Project Work
 
   - [Install Prometheus & Grafana](./docs/Monitoring.md)
 
-## How to ramp up infrastructure and release
+## How to start
 
-Make sure to check all prereq
+Make sure to check all [prerequisites](./docs/Prerequisites.md)
 
-Use single one-line command to
+Use single one-line command to ramp up infrastructure and release, namely:
  - bring up GCP infrastructure
  - install nginx (with Gitlab chart) as a single LoadBalancer with external IP for all project resources
  - install and configure Gitlab server.
